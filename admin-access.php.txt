@@ -1,0 +1,18 @@
+<?php
+/* Template Name: Admin Access */
+get_header();
+?>
+<div class="admin-access-wrapper">
+<?php
+if ( is_user_logged_in() ) :
+    $current_user = wp_get_current_user();
+    if ( in_array('student', $current_user->roles) ) : ?>
+        <a href="<?php echo site_url('/student-dashboard/'); ?>" class="admin-card-btn">Go to Dashboard</a>
+    <?php elseif ( in_array('administrator', $current_user->roles) ) : ?>
+        <a href="<?php echo site_url('/wp-admin/'); ?>" class="admin-card-btn">Go to Admin Panel</a>
+    <?php endif;
+else: ?>
+    <a href="<?php echo site_url('/student-login/'); ?>" class="admin-card-btn">Student Login</a>
+<?php endif; ?>
+</div>
+<?php get_footer(); ?>

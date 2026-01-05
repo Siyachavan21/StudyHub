@@ -1,0 +1,78 @@
+<?php
+/* Template Name: Student Profile */
+get_header(); 
+$user_id = get_current_user_id();
+if (!is_user_logged_in()) {
+    wp_redirect(wp_login_url());
+    exit;
+}
+?>
+
+<div style="max-width:1000px;margin:40px auto;padding:20px;">
+    <h1>👤 My Profile</h1>
+    
+    <?php 
+    $user = get_userdata($user_id);
+    $enrolled_courses = [];
+    $courses = get_posts(['post_type' => 'course', 'posts_per_page' => -1]);
+    foreach ($courses as $course) {
+        $enrolled = get_post_meta($course->ID, '_enrolled_students', true);
+        if (is_array($enrolled) && in_array($user_id, $enrolled)) {
+            $lessons = get_posts(['post_type' => 'lesson', 'meta_key' => '_lesson_course', 'meta_value' => $course->ID]);
+            $completed = 0;
+            foreach ($lessons as $l) {
+                if (get_post_meta($l->ID, '_lesson_completed_'.$user_id, true)) $completed++;
+            }
+            $enrolled_courses[] = [
+                'title' => $course->post_title,
+                'link' => get_permalink($course->ID),
+                'progress' => $lessons ? round(($completed/count($lessons))*100) : 0,
+                'completed_lessons' => $completed,
+                'total_lessons' => count($lessons)
+            ];
+        }
+    }
+    ?>
+    
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:30px;margin-top:30px;">
+        <!-- Profile Info -->
+        <div style="background:#1f2937;color:white;padding:30px;border-radius:16px;">
+            <h2><?php echo esc_html($user->display_name); ?></h2>
+            <p><strong>Email:</strong> <?php echo esc_html($user->user_email); ?></p>
+            <p><strong>Joined:</strong> <?php echo date('M Y', strtotime(get_user_meta($user_id, 'user_registered', true))); ?></p>
+            <p><strong>Total Courses:</strong> <?php echo count($enrolled_courses); ?></p>
+        </div>
+        
+        <!-- Progress Overview -->
+        <div>
+            <?php if ($enrolled_courses): ?>
+                <h3>My Courses</h3>
+                <?php foreach ($enrolled_courses as $course): ?>
+                    <div style="background:#111827;color:white;padding:20px;border-radius:12px;margin-bottom:15px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <h4 style="margin:0;"><a href="<?php echo esc_url($course['link']); ?>" style="color:#f97316;text-decoration:none;"><?php echo esc_html($course['title']); ?></a></h4>
+                                <small><?php echo $course['completed_lessons']; ?>/<?php echo $course['total_lessons']; ?> lessons</small>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="background:#374151;height:8px;border-radius:4px;overflow:hidden;margin-bottom:5px;">
+                                    <div style="background:#22c55e;width:<?php echo $course['progress']; ?>%;height:100%;"></div>
+                                </div>
+                                <strong><?php echo $course['progress']; ?>%</strong>
+                            </div>
+                        </div>
+                        <?php if ($course['progress'] >= 80): ?>
+                            <div style="margin-top:10px;">
+                                [course_certificate course_id="<?php echo $course['link']; ?>"]
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No courses enrolled yet. <a href="<?php echo site_url('/courses/'); ?>">Browse courses</a></p>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php get_footer(); ?>
